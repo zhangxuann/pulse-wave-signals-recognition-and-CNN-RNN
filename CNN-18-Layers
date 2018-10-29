@@ -1,0 +1,342 @@
+#共18层的神经网络，设计如下
+name: "cnn18"
+layer
+{
+    name: "data"
+    type: "HDF5Data"
+    top: "data"
+    top: "label"
+    include {phase: TRAIN}
+    hdf5_data_param {
+        source: "examples/1health/train.txt"
+        batch_size: 32
+        shuffle: 1
+    }
+}
+layer
+{
+    name: "data"
+    type: "HDF5Data"
+    top: "data"
+    top: "label"
+    include {phase: TEST}
+    hdf5_data_param {
+        source: "examples/1health/test.txt"
+        batch_size: 32
+        shuffle: 1
+    }
+}
+layer
+{
+    name: "conv1"
+    type: "Convolution"
+    bottom: "data"
+    top: "conv1"
+    convolution_param {
+        num_output: 16
+        kernel_h: 1
+        kernel_w: 3
+        stride: 1
+        weight_filler {type: "msra"}
+        bias_term:false
+    }
+}
+layer {
+    name: "bn_conv1"
+	type: "BatchNorm"
+	bottom: "conv1"
+	top: "conv1"
+	batch_norm_param {
+	   use_global_stats: false
+    }
+}
+layer
+{
+    name: "conv1_relu"
+    type: "ReLU"
+    top: "conv1"
+    bottom: "conv1"
+}
+layer
+{
+    name: "pool1"
+    type: "Pooling"
+    bottom: "conv1"
+    top: "pool1"
+    pooling_param {
+        pool: MAX
+        kernel_h: 1
+        kernel_w: 2
+        stride_h: 1
+        stride_w: 2
+    }
+}
+
+layer
+{
+    name: "conv2"
+    type: "Convolution"
+    bottom: "pool1"
+    top: "conv2"
+    convolution_param {
+        num_output: 32
+        kernel_h: 1
+        kernel_w: 3
+        stride: 1
+        weight_filler {type: "msra"}
+        bias_term: false
+    }
+}
+layer
+{
+    name: "conv2_relu"
+    type: "ReLU"
+    top: "conv2"
+    bottom: "conv2"
+}
+layer
+{
+    name: "pool2"
+    type: "Pooling"
+    bottom: "conv2"
+    top: "pool2"
+    pooling_param {
+        pool: MAX
+        kernel_h: 1
+        kernel_w: 2
+        stride_h: 1
+        stride_w: 2
+    }
+}
+
+layer
+{
+    name: "conv3"
+    type: "Convolution"
+    bottom: "pool2"
+    top: "conv3"
+    convolution_param {
+        num_output: 64
+        kernel_h: 1
+        kernel_w: 3
+        stride: 1
+        weight_filler {type: "msra"}
+        bias_term: false
+    }
+}
+layer
+{
+    name: "conv3_relu"
+    type: "ReLU"
+    top: "conv3"
+    bottom: "conv3"
+}
+layer
+{
+    name: "pool3"
+    type: "Pooling"
+    bottom: "conv3"
+    top: "pool3"
+    pooling_param {
+        pool: MAX
+        kernel_h: 1
+        kernel_w: 3
+        stride_h: 1
+        stride_w: 2
+    }
+}
+
+layer
+{
+    name: "conv4"
+    type: "Convolution"
+    bottom: "pool3"
+    top: "conv4"
+   
+    convolution_param {
+        num_output: 128
+        kernel_h: 1
+        kernel_w: 4
+        stride: 1
+
+        weight_filler {type: "msra"}
+        bias_term: false
+    }
+}
+layer
+{
+    name: "conv4_relu"
+    type: "ReLU"
+    top: "conv4"
+    bottom: "conv4"
+}
+layer
+{
+    name: "pool4"
+    type: "Pooling"
+    bottom: "conv4"
+    top: "pool4"
+    pooling_param {
+        pool: MAX
+        kernel_h: 1
+        kernel_w: 2
+        stride_h: 1
+        stride_w: 2
+    }
+}
+
+layer
+{
+    name: "conv5"
+    type: "Convolution"
+    bottom: "pool4"
+    top: "conv5"
+    
+    convolution_param {
+        num_output: 256
+        kernel_h: 1
+        kernel_w: 2
+        stride: 1
+        weight_filler {type: "msra"}
+        bias_term: false
+    }
+}
+layer
+{
+    name: "conv5_relu"
+    type: "ReLU"
+    top: "conv5"
+    bottom: "conv5"
+}
+layer
+{
+    name: "pool5"
+    type: "Pooling"
+    bottom: "conv5"
+    top: "pool5"
+    pooling_param {
+        pool: MAX
+        kernel_h: 1
+        kernel_w: 2
+        stride_h: 1
+        stride_w: 2
+    }
+}
+
+layer
+{
+    name: "conv6"
+    type: "Convolution"
+    bottom: "pool5"
+    top: "conv6"
+    
+    convolution_param {
+        num_output: 512
+        kernel_h: 1
+        kernel_w: 3
+        stride: 1
+
+        weight_filler {type: "msra"}
+        bias_term: false
+    }
+}
+layer
+{
+    name: "conv6_relu"
+    type: "ReLU"
+    top: "conv6"
+    bottom: "conv6"
+}
+layer
+{
+    name: "pool6"
+    type: "Pooling"
+    bottom: "conv6"
+    top: "pool6"
+    pooling_param {
+        pool: MAX
+        kernel_h: 1
+        kernel_w: 2
+        stride: 1
+    }
+}
+
+layer
+{
+    name: "conv7"
+    type: "Convolution"
+    bottom: "pool6"
+    top: "conv7"
+    
+    convolution_param {
+        num_output: 1024
+        kernel_h: 1
+        kernel_w: 3
+        stride: 1
+        weight_filler {type: "msra"}
+        bias_term: false
+    }
+}
+layer
+{
+    name: "conv7_relu"
+    type: "ReLU"
+    top: "conv7"
+    bottom: "conv7"
+}
+
+layer {
+  name: "ip1"
+  type: "InnerProduct"
+  bottom: "conv7"
+  top: "ip1"
+  param {lr_mult: 1}
+  param {lr_mult: 2}
+  inner_product_param {
+    num_output: 500
+    weight_filler {type: "xavier"}
+    bias_filler {type: "constant"}
+  }
+}
+layer {
+    name: "ip1_relu"
+	type: "ReLU"
+	top: "ip1"
+	bottom: "ip1"
+}
+
+layer
+{
+    name: "ip2"
+    type: "InnerProduct"
+    bottom: "ip1"
+    top: "ip2"
+    param {lr_mult: 1}
+    param {lr_mult: 2}
+    inner_product_param {
+        num_output: 2
+        weight_filler {type: "xavier"}
+        bias_filler {type: "constant"}
+    }
+}
+
+layer
+{
+    name: "accuracy"
+    type: "Accuracy"
+    bottom: "ip2"
+    bottom: "label"
+    top: "accuracy"
+    include {
+        phase: TEST
+    }
+}
+layer
+{
+    name: "loss"
+    type: "SoftmaxWithLoss"
+    bottom: "ip2"
+    bottom: "label"
+    top: "loss"
+}
+
