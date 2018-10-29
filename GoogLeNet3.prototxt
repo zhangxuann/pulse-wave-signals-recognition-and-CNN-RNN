@@ -1,0 +1,758 @@
+#包括三部分：网络结构设计、训练参数、训练脚本。
+# 1，网络结构设计
+name: "GoogleNet3"
+layer {
+  name: "data"
+  type: "HDF5Data"
+  top: "data"
+  top: "label"
+  include {phase: TRAIN}
+  hdf5_data_param {
+    source: "examples/1health/train.txt"
+    batch_size: 30
+    }
+}
+layer {
+  name: "data"
+  type: "HDF5Data"
+  top: "data"
+  top: "label"
+  include {phase: TEST}
+
+  hdf5_data_param {
+    source: "examples/1health/test.txt"
+    batch_size: 30
+    }
+}
+
+layer {
+  name: "conv1"
+  type: "Convolution"
+  bottom: "data"
+  top: "conv1"
+  convolution_param {
+    num_output: 32
+    pad: 0
+    kernel_h: 1
+    kernel_w: 3
+    stride: 1
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "relu1"
+  type: "ReLU"
+  bottom: "conv1"
+  top: "conv1"
+}
+
+layer {
+  name: "pool1"
+  type: "Pooling"
+  bottom: "conv1"
+  top: "pool1"
+  pooling_param {
+    pool: MAX
+    kernel_h:1
+    kernel_w:2
+    stride_h: 1
+    stride_w: 2
+  }
+}
+
+layer {
+  name: "icp_conv1"
+  type: "Convolution"
+  bottom: "pool1"
+  top: "icp_conv1"
+  convolution_param {
+    num_output: 16
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "icp_conv1_relu"
+  type: "ReLU"
+  bottom: "icp_conv1"
+  top: "icp_conv1"
+}
+
+layer {
+  name: "icp_conv2_1"
+  type: "Convolution"
+  bottom: "pool1"
+  top: "icp_conv2_1"
+  convolution_param {
+    num_output: 24
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "icp_conv2_1_relu"
+  type: "ReLU"
+  bottom: "icp_conv2_1"
+  top: "icp_conv2_1"
+}
+
+layer {
+  name: "icp_conv2_2"
+  type: "Convolution"
+  bottom: "icp_conv2_1"
+  top: "icp_conv2_2"
+  convolution_param {
+    num_output: 32
+    pad_h: 0
+    pad_w: 1
+    kernel_h: 1
+    kernel_w: 3
+    stride: 1
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "icp_conv2_2_relu"
+  type: "ReLU"
+  bottom: "icp_conv2_2"
+  top: "icp_conv2_2"
+}
+
+
+layer {
+  name: "icp_conv3_1"
+  type: "Convolution"
+  bottom: "pool1"
+  top: "icp_conv3_1"
+  convolution_param {
+    num_output: 8
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "icp_conv3_1_relu"
+  type: "ReLU"
+  bottom: "icp_conv3_1"
+  top: "icp_conv3_1"
+}
+
+layer {
+  name: "icp_conv3_2"
+  type: "Convolution"
+  bottom: "icp_conv3_1"
+  top: "icp_conv3_2"
+  convolution_param {
+    num_output: 8
+    pad_h: 0
+    pad_w: 2
+    kernel_h: 1
+    kernel_w: 5
+    stride: 1
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "icp_conv3_2_relu"
+  type: "ReLU"
+  bottom: "icp_conv3_2"
+  top: "icp_conv3_2"
+}
+
+layer {
+  name: "icp_pool4"
+  type: "Pooling"
+  bottom: "pool1"
+  top: "icp_pool4"
+  pooling_param {
+    pool: MAX
+    kernel_h:1
+    kernel_w:3
+    stride: 1
+    pad_h: 0
+    pad_w: 1
+  }
+}  
+
+layer {
+  name: "icp_conv4_2"
+  type: "Convolution"
+  bottom: "icp_pool4"
+  top: "icp_conv4_2"
+  convolution_param {
+    num_output: 8
+    pad: 0
+    kernel_size: 1    
+    stride: 1
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "icp_conv4_2_relu"
+  type: "ReLU"
+  bottom: "icp_conv4_2"
+  top: "icp_conv4_2"
+}
+layer {
+  name: "icp_out"
+  type: "Concat"
+  bottom: "icp_conv1"
+  bottom: "icp_conv2_2"
+  bottom: "icp_conv3_2"
+  bottom: "icp_conv4_2"
+  top: "icp_out"
+}
+layer {
+  name: "conv2"
+  type: "Convolution"
+  bottom: "icp_out"
+  top: "conv2"
+  convolution_param {
+    num_output: 128
+    pad: 0
+    kernel_h: 1
+    kernel_w: 4
+    stride_h: 1
+    stride_w: 2
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "relu2"
+  type: "ReLU"
+  bottom: "conv2"
+  top: "conv2"
+}
+
+layer {
+  name: "pool2"
+  type: "Pooling"
+  bottom: "conv2"
+  top: "pool2"
+  pooling_param {
+    pool: MAX
+    kernel_h:1
+    kernel_w:3
+    stride_h: 1
+    stride_w: 2
+  }
+}
+
+layer {
+  name: "icp2_conv1"
+  type: "Convolution"
+  bottom: "pool2"
+  top: "icp2_conv1"
+  convolution_param {
+    num_output: 64
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "icp2_conv1_relu"
+  type: "ReLU"
+  bottom: "icp2_conv1"
+  top: "icp2_conv1"
+}
+
+layer {
+  name: "icp2_conv2_1"
+  type: "Convolution"
+  bottom: "pool2"
+  top: "icp2_conv2_1"
+  convolution_param {
+    num_output: 96
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "icp2_conv2_1_relu"
+  type: "ReLU"
+  bottom: "icp2_conv2_1"
+  top: "icp2_conv2_1"
+}
+
+layer {
+  name: "icp2_conv2_2"
+  type: "Convolution"
+  bottom: "icp2_conv2_1"
+  top: "icp2_conv2_2"
+  convolution_param {
+    num_output: 128
+    pad_h: 0
+    pad_w: 1
+    kernel_h: 1
+    kernel_w: 3
+    stride: 1
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "icp2_conv2_2_relu"
+  type: "ReLU"
+  bottom: "icp2_conv2_2"
+  top: "icp2_conv2_2"
+}
+
+
+layer {
+  name: "icp2_conv3_1"
+  type: "Convolution"
+  bottom: "pool2"
+  top: "icp2_conv3_1"
+  convolution_param {
+    num_output: 16
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "icp2_conv3_1_relu"
+  type: "ReLU"
+  bottom: "icp2_conv3_1"
+  top: "icp2_conv3_1"
+}
+
+layer {
+  name: "icp2_conv3_2"
+  type: "Convolution"
+  bottom: "icp2_conv3_1"
+  top: "icp2_conv3_2"
+  convolution_param {
+    num_output: 32
+    pad_h: 0
+    pad_w: 2
+    kernel_h: 1
+    kernel_w: 5
+    stride: 1
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "icp2_conv3_2_relu"
+  type: "ReLU"
+  bottom: "icp2_conv3_2"
+  top: "icp2_conv3_2"
+}
+
+layer {
+  name: "icp2_pool4"
+  type: "Pooling"
+  bottom: "pool2"
+  top: "icp2_pool4"
+  pooling_param {
+    pool: MAX
+    kernel_h:1
+    kernel_w:3
+    stride: 1
+    pad_h: 0
+    pad_w: 1
+  }
+}  
+
+layer {
+  name: "icp2_conv4_2"
+  type: "Convolution"
+  bottom: "icp2_pool4"
+  top: "icp2_conv4_2"
+  convolution_param {
+    num_output: 32
+    pad: 0
+    kernel_size: 1    
+    stride: 1
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "icp2_conv4_2_relu"
+  type: "ReLU"
+  bottom: "icp2_conv4_2"
+  top: "icp2_conv4_2"
+}
+
+layer {
+  name: "icp2_out"
+  type: "Concat"
+  bottom: "icp2_conv1"
+  bottom: "icp2_conv2_2"
+  bottom: "icp2_conv3_2"
+  bottom: "icp2_conv4_2"
+  top: "icp2_out"
+}
+
+layer {
+  name: "icp3_conv1"
+  type: "Convolution"
+  bottom: "icp2_out"
+  top: "icp3_conv1"
+  convolution_param {
+    num_output: 128
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "icp3_conv1_relu"
+  type: "ReLU"
+  bottom: "icp3_conv1"
+  top: "icp3_conv1"
+}
+
+layer {
+  name: "icp3_conv2_1"
+  type: "Convolution"
+  bottom: "icp2_out"
+  top: "icp3_conv2_1"
+  convolution_param {
+    num_output: 128
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "icp3_conv2_1_relu"
+  type: "ReLU"
+  bottom: "icp3_conv2_1"
+  top: "icp3_conv2_1"
+}
+
+layer {
+  name: "icp3_conv2_2"
+  type: "Convolution"
+  bottom: "icp3_conv2_1"
+  top: "icp3_conv2_2"
+  convolution_param {
+    num_output: 192
+    pad_h: 0
+    pad_w: 1
+    kernel_h: 1
+    kernel_w: 3
+    stride: 1
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "icp3_conv2_2_relu"
+  type: "ReLU"
+  bottom: "icp3_conv2_2"
+  top: "icp3_conv2_2"
+}
+
+layer {
+  name: "icp3_conv3_1"
+  type: "Convolution"
+  bottom: "icp2_out"
+  top: "icp3_conv3_1"
+  convolution_param {
+    num_output: 32
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "icp3_conv3_1_relu"
+  type: "ReLU"
+  bottom: "icp3_conv3_1"
+  top: "icp3_conv3_1"
+}
+
+layer {
+  name: "icp3_conv3_2"
+  type: "Convolution"
+  bottom: "icp3_conv3_1"
+  top: "icp3_conv3_2"
+  convolution_param {
+    num_output: 96
+    pad_h: 0
+    pad_w: 2
+    kernel_h: 1
+    kernel_w: 5
+    stride: 1
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "icp3_conv3_2_relu"
+  type: "ReLU"
+  bottom: "icp3_conv3_2"
+  top: "icp3_conv3_2"
+}
+
+layer {
+  name: "icp3_pool4"
+  type: "Pooling"
+  bottom: "icp2_out"
+  top: "icp3_pool4"
+  pooling_param {
+    pool: MAX
+    kernel_h:1
+    kernel_w:3
+    stride: 1
+    pad_h: 0
+    pad_w: 1
+  }
+}  
+
+layer {
+  name: "icp3_conv4_2"
+  type: "Convolution"
+  bottom: "icp3_pool4"
+  top: "icp3_conv4_2"
+  convolution_param {
+    num_output: 64
+    pad: 0
+    kernel_size: 1    
+    stride: 1
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "icp3_conv4_2_relu"
+  type: "ReLU"
+  bottom: "icp3_conv4_2"
+  top: "icp3_conv4_2"
+}
+
+layer {
+  name: "icp3_out"
+  type: "Concat"
+  bottom: "icp3_conv1"
+  bottom: "icp3_conv2_2"
+  bottom: "icp3_conv3_2"
+  bottom: "icp3_conv4_2"
+  top: "icp3_out"
+}
+
+layer {
+  name: "conv3"
+  type: "Convolution"
+  bottom: "icp3_out"
+  top: "conv3"
+  convolution_param {
+    num_output: 512
+    pad: 0
+    kernel_h: 1
+    kernel_w: 5
+    stride: 1   
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "relu3"
+  type: "ReLU"
+  bottom: "conv3"
+  top: "conv3"
+}
+
+layer {
+  name: "pool3"
+  type: "Pooling"
+  bottom: "conv3"
+  top: "pool3"
+  pooling_param {
+    pool: MAX
+    kernel_h:1
+    kernel_w:2
+    stride_h: 1
+    stride_w: 2
+  }
+}
+
+layer {
+  name: "conv4"
+  type: "Convolution"
+  bottom: "pool3"
+  top: "conv4"
+  convolution_param {
+    num_output: 512
+    pad: 0
+    kernel_h: 1
+    kernel_w: 5
+    stride: 1   
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "relu4"
+  type: "ReLU"
+  bottom: "conv4"
+  top: "conv4"
+}
+
+layer {
+  name: "pool4"
+  type: "Pooling"
+  bottom: "conv4"
+  top: "pool4"
+  pooling_param {
+    pool: MAX
+    kernel_h:1
+    kernel_w:3
+    stride_h: 1
+    stride_w: 2
+  }
+}
+
+layer {
+  name: "conv5"
+  type: "Convolution"
+  bottom: "pool4"
+  top: "conv5"
+  convolution_param {
+    num_output: 1024
+    pad: 0
+    kernel_h: 1
+    kernel_w: 2
+    stride: 1   
+    weight_filler {type: "msra"}
+    bias_term: false
+  }
+}
+layer {
+  name: "relu5"
+  type: "ReLU"
+  bottom: "conv5"
+  top: "conv5"
+}
+
+layer {
+  name: "pool5"
+  type: "Pooling"
+  bottom: "conv5"
+  top: "pool5"
+  pooling_param {
+    pool: MAX
+    kernel_h:1
+    kernel_w:3
+    stride: 1    
+  }
+}
+
+layer {
+  name: "ip1"
+  type: "InnerProduct"
+  bottom: "pool5"
+  top: "ip1"
+  param {lr_mult: 1}
+  param {lr_mult: 2}
+  inner_product_param {
+    num_output: 512
+    weight_filler {type: "xavier"}
+    bias_filler {type: "constant"}
+  }
+}
+layer {
+        name: "ip1_relu"
+	type: "ReLU"
+	top: "ip1"
+	bottom: "ip1"
+}
+
+layer
+{
+    name: "ip2"
+    type: "InnerProduct"
+    bottom: "ip1"
+    top: "ip2"
+    param {lr_mult: 1}
+    param {lr_mult: 2}
+    inner_product_param {
+        num_output: 2
+        weight_filler {type: "xavier"}
+        bias_filler {type: "constant"}
+    }
+}
+
+layer
+{
+    name: "accuracy"
+    type: "Accuracy"
+    bottom: "ip2"
+    bottom: "label"
+    top: "accuracy"
+    include {
+        phase: TEST
+    }
+}
+layer
+{
+    name: "loss"
+    type: "SoftmaxWithLoss"
+    bottom: "ip2"
+    bottom: "label"
+    top: "loss"
+}
+
+# 2训练参数设计，solver.prototxt
+# The train/test net protocol buffer definition
+net: "examples/1health/3googlenet/googlenet3.prototxt"
+# test_iter specifies how many forward passes the test should carry out.
+# In the case of MNIST, we have test batch size 100 testiterations,
+# covering the full  70750 testing images.
+test_iter:300
+# Carry out testing every 1602 training iterations.
+test_interval:300
+# The base learning rate, momentum and the weight decay of the network.
+base_lr:0.0001
+momentum: 0.9
+weight_decay: 0.000005
+# The learning rate policy
+lr_policy: "inv"
+gamma: 0.00001
+power: 0.75
+# Display every 100 iterations
+display: 100
+# The maximum number of iterations
+max_iter: 10000
+
+# solver mode: CPU or GPU
+solver_mode: CPU
+
+# 3,训练脚本，.sh
+#!/usr/bin/env sh
+./build/tools/caffe train --solver=examples/1health/3googlenet/googlenet3_solver.prototxt 
+
+
+
