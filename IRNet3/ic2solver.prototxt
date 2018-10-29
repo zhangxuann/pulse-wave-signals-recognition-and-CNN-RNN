@@ -1,0 +1,23 @@
+# The train/test net protocol buffer definition
+net: "7ic/ic2/ic2.prototxt"
+# test_iter specifies how many forward passes the test should carry out.
+# covering the full  70740 testing images.
+test_iter:1000
+# Carry out testing every 1602 training iterations.
+test_interval:800
+# The base learning rate, momentum and the weight decay of the network.
+test_initialization: false
+base_lr: 0.00001
+momentum: 0.9
+weight_decay: 0.000005
+# The learning rate policy
+lr_policy: "inv"
+gamma: 0.0001
+power: 0.75
+
+# Display every 100 iterations
+display: 100
+# The maximum number of iterations
+max_iter: 35000
+# solver mode: CPU or GPU
+solver_mode: CPU
