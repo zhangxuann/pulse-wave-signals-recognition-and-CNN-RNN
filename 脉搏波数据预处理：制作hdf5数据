@@ -1,0 +1,174 @@
+  #"""一，代码简介
+ Caffe处理一维时间序列数据，其可读的数据格式是hdf5，脉搏波正是时间序列数据，因此需要做成hdf5数据。原始脉搏波
+ 数据是2283条由8000个点组成的txt文档，分为测试集健康、测试集亚健康、训练集健康及训练集亚健康，编号为，
+ test_health:1-592（592条），test_subhealth:593-1358（766条）; train_health:1359-1891（533条）;
+ train_subhealth:1892-2283（392条）. 经过主波提取（main_pulse.m）、周期划分(split_pulse.m)、制作hdf5
+ 数据(generate_h5.m)等三个过程，获得Caffe可读的hdf5数据（train.h5和test.h5）。
+    main_pulse.m:处理原始的文本数据，得到特征提取和去噪后的datapa.mat（1891条1*8000）和其对应的主波位置
+ H1.mat，每条脉搏波和其主波位置是对应的；split_pulse.m：以主波位置为基准，向前取99个点，向后取150个点，
+ 保证划分周期的完整性，每个周期内，只有一个主波，并在每个周期的第一列加标签0/1,循环上述过程，获得数万条1*251
+ 的脉搏波周期；generate_h5.m：需要merge.m将上一过程得到的健康和亚健康的测试数据和训练数据合并为train.mat和
+ test.mat，转换为hdf5数据格式，获得train.h5和test.h5。各部分代码，matlab编写，有详细注释，可见下文
+ 【代码部分】或用Notepad++打开代码。     
+在main_pulse.m中，调用了ProcessPulseData.m，在ProcessPulseData.m又调用filterPulForR_peak.m、
+percussionwaveDetection.m和diff_pulse.m，这四个函数主要是信号处理方面，不涉及我的工作，由实验室里的其他
+同学完成。"""
+二，代码部分：
+
+# main_pulse.m
+function main_testPulse() 
+i=1;
+L=766; %总共处理的文本数量
+for i=1:L
+    dataname=sprintf('%d.txt',i+592);
+    cd('C:\Users\Administrator\Desktop\深度学习资料\9数据\我的数据预处理\7test_subhealth');    
+    Fs=200; %采样频率
+    data1 = importdata(dataname);%data1为N*1格式
+    data=data1(2:end);%去掉第一行，第一行数字无效
+    [H1,Beg,datapb,datapa]  = ProcessPulseData(data',Fs);%%%要求输入data为1*N格式
+    cd('C:\Users\Administrator\Desktop\深度学习资料\9数据\我的数据预处理\7test_subhealth2');
+    dataname1=[];
+    dataname2=[];
+    dataname1=sprintf('%d',i+592);
+    dataname2=sprintf('%dp',i+592);
+   
+    save(strcat('',sprintf('%d',i+592)),'datapa');
+    save(strcat('',sprintf('%dp',i+592)),'H1');   
+     
+  %% 画图看是否准确
+   plot(datapa);
+   hold on;
+   %grid on;
+   plot(H1,datapa(H1),'r*')%主峰点
+   plot(Beg,datapa(Beg),'go')%起始点
+end
+end
+
+# split_pulse.m
+function split_pulse()
+DT=[]; %初始化
+h=0;
+L=766; %脉搏波总数和主波位置矩阵总数
+i=1;  %样本数，从1到766
+for i=1:L    
+    dataname= sprintf('%d.mat',i+592);  %数据名以字符串形式读入
+    cd('C:\Users\Administrator\Desktop\深度学习资料\9数据\我的数据预处理\7test_subhealth2');   
+    T=[];  
+    T=load(dataname);  %循环读取脉搏波记录，592*（1*8000）.mat    
+    T1=[];
+    T1=T.datapa;
+    T2=T1';
+
+    R1=[];
+    dataname1= sprintf('%dp.mat',i+592);  %循环读取脉搏波主波位置H1向量，130*（1*50~70）
+    R1=load(dataname1); %读取主波位置组成的向量
+    R2=[];
+    R2=R1.H1; 
+
+    L1=length(R2);  %获取脉搏波主波的位置列表的长度
+    L2=length(T2);  %获取脉搏波长度,
+    t1=[];
+    t1=T2(1:end);
+    
+    for  j=1:L1    %验证输出是53个1*250的完整周期
+        fprintf('seq=%d,pr=%d.....\n',i+592,j+592);        
+
+    if R2(1,j)-99<=0 | R2(1,j)+150>L2  %防止截取波形出现溢出情况
+        continue;
+    end
+    h=h+1; %这里是为了循环读取百条数据的，和最开始的几行一样。
+    DT(h,1)=0;  %DT矩阵中第一列为疾病类型，健康的标签为0
+    DT(h,2:251)= t1((R2(1,j)-99): (R2(1,j)+150))';  %假设前截取99个采样点，往后截取150个采样点，
+                                  共250个采样点为一个波，因为是DT是列数据 %（8000*1） 所以要转置。
+    plot(DT(h,2:251)); %检验截取是否正确
+    end
+clear T;
+clear R
+end
+save DT766 DT %把存好的矩阵DT中的数据存到DT2中。
+end
+
+#  merge.m
+cd('C:\Users\Administrator\Desktop\深度学习资料\9数据\我的数据预处理\14test');
+%读取DT5592和DT766，将二者合并为测试集
+D1=[];
+D1=load('DT592');
+D2=[];
+D2=D1.DT;
+
+D3=[];
+D3=load('DT766');
+D4=[];
+D4=D3.DT;
+D4(:,1)=1;
+T1=[D2;D4];
+save Test T1;
+
+# generate_h5.m：
+clear all; close all; clc;
+
+%% 分别制作trainh.h5和trainsh.h5文件，下面这是trainh.h5.  
+load Train.mat;  %读取数据.mat
+data  = zeros(size(T2,2)-1, 1, 1, size(T2,1));  %初始化data,且为是四维，中间两项为1，第一维是减去
+                                                  第一列标签后的列数，第四维是总行数
+label = zeros(1,1,1,size(T2,1));% 初始化标签，也是四维，第四维是总行数
+for i=1:size(T2,1)   %循环读取所有行，
+    data(:,1,1,i) = T2(i,2:end)'; %因为第一列是标签，所以从第二列开始，读取2-251共250个数据
+    label(1,1,1,i)= T2(i,1);  %标签值0/1赋给label(1,1,1,i) 
+end
+% 随机化数据序号
+idx = randperm(size(T2,1)); 
+data = data(:,:,:,idx);
+label= label(:,:,:,idx);
+
+%hdf5 数据的组织形式
+savepath = 'C:\trainset\train.h5';
+chunksz = 30;  %每30个周期（30*1*250）组成一个chunksz
+created_flag = false;
+totalct = 0;
+count =  size(label,4);  %标签数就是数据量总数。
+
+%hdf5数据的组织格式
+for batchno = 1:floor(count/chunksz)
+    last_read=(batchno-1)*chunksz;
+    batchdata = data(:,:,1,last_read+1:last_read+chunksz); 
+    batchlabs = label(:,:,1,last_read+1:last_read+chunksz);
+
+    startloc = struct('dat',[1,1,1,totalct+1], 'lab', [1,1,1,totalct+1]);  
+    curr_dat_sz = store2hdf5(savepath, batchdata, batchlabs, ~created_flag, startloc, chunksz); 
+    created_flag = true;
+    totalct = curr_dat_sz(end);
+end
+h5disp(savepath);  %展示制作好的hdf5数据形式
+
+%% test data，和制作训练集的过程相同
+load Test.mat;
+data  = zeros(size(T1,2)-1, 1, 1, size(T1,1));
+label = zeros(1,1,1,size(T1,1));
+for i=1:size(T1,1)
+    data(:,1,1,i) = T1(i,2:end)';
+    label(1,1,1,i)= T1(i,1);
+end
+idx = randperm(size(T1,1));
+data = data(:,:,:,idx);
+label= label(:,:,:,idx);
+
+savepath = 'C:\trainset\test.h5';
+%savepath = 'C:/caffe-windows/examples/cnn_lstm/data_prepare/val.h5';
+chunksz = 30;
+created_flag = false;
+totalct = 0;
+count =  size(label,4);
+
+for batchno = 1:floor(count/chunksz)
+    last_read=(batchno-1)*chunksz;
+    batchdata = data(:,:,1,last_read+1:last_read+chunksz); 
+    batchlabs = label(:,:,1,last_read+1:last_read+chunksz);
+
+    startloc = struct('dat',[1,1,1,totalct+1], 'lab', [1,1,1,totalct+1]);
+    curr_dat_sz = store2hdf5(savepath, batchdata, batchlabs, ~created_flag, startloc, chunksz); 
+    created_flag = true;
+    totalct = curr_dat_sz(end);
+end
+h5disp(savepath);
+
